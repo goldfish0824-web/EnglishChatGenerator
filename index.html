@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>English Chat Generator (Gemini Edition)</title>
+    <style>
+        :root {
+            --primary-color: #4A90E2;
+            --bg-color: #F5F7FA;
+            --card-bg: #FFFFFF;
+            --text-color: #333;
+            --border-radius: 12px;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            background-color: var(--card-bg);
+            width: 100%;
+            max-width: 500px;
+            border-radius: var(--border-radius);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            padding: 24px;
+            box-sizing: border-box;
+        }
+
+        h1 {
+            font-size: 20px;
+            margin-top: 0;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .description {
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 24px;
+            line-height: 1.4;
+        }
+
+        /* Form Layout */
+        .row {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .col {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .col-2 {
+            flex: 2;
+        }
+
+        label {
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 4px;
+            color: #555;
+        }
+
+        select, input, textarea {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px; /* Prevents zoom on iPhone */
+            background-color: #fff;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        input[readonly] {
+            background-color: #f9f9f9;
+            color: #555;
+        }
+
+        /* Buttons */
+        .btn-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        button {
+            background-color: #fff;
+            border: 1px solid var(--primary-color);
+            color: var(--primary-color);
+            padding: 10px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+
+        button.primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        button:active {
+            transform: scale(0.98);
+            opacity: 0.9;
+        }
+
+        /* Output Area */
+        .output-section {
+            margin-top: 24px;
+        }
+
+        .output-label {
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 120px;
+            font-family: monospace;
+            font-size: 13px;
+            line-height: 1.4;
+            margin-bottom: 10px;
+        }
+
+        .copy-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+        }
+
+        /* Japanese Section */
+        .jp-section {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px dashed #ddd;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>💬 English Chat Generator</h1>
+    <p class="description">50 personas + 50 topics (Gemini Optimized).<br>Generates strict prompts to keep the conversation on topic.</p>
+
+    <div class="row">
+        <div class="col col-2">
+            <label>Person</label>
+            <select id="personSelect"></select>
+        </div>
+        <div class="col col-2">
+            <label>Topic</label>
+            <select id="topicSelect"></select>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col">
+            <label>Name</label>
+            <input type="text" id="nameDisplay" readonly>
+        </div>
+        <div class="col">
+            <label>Country</label>
+            <input type="text" id="countryDisplay" readonly>
+        </div>
+        <div class="col">
+            <label>City</label>
+            <input type="text" id="cityDisplay" readonly>
+        </div>
+    </div>
+
+    <div class="btn-group">
+        <button class="primary" onclick="randomizeAll()">🎲 Randomize all</button>
+        <button onclick="randomizePersona()">👤 Random persona</button>
+        <button onclick="randomizeTopic()">📝 Random topic</button>
+    </div>
+
+    <div class="output-section">
+        <div class="output-label">Prompt (English) - Optimized for Gemini</div>
+        <textarea id="promptOutput" readonly></textarea>
+        <button class="copy-btn" onclick="copyToClipboard('promptOutput')">Copy English</button>
+    </div>
+
+    <div class="jp-section output-section">
+        <div class="output-label">プロンプト (日本語)</div>
+        <textarea id="jpPromptOutput" readonly style="min-height: 80px;"></textarea>
+        <button class="copy-btn" onclick="copyToClipboard('jpPromptOutput')">日本語をコピー</button>
+    </div>
+</div>
+
+<script>
+    // ==========================================
+    // DATA: 50 Personas & 50 Topics
+    // ==========================================
+    const personas = [
+        { name: "Daniel", country: "Germany", city: "Berlin" },
+        { name: "Emma", country: "UK", city: "London" },
+        { name: "Liam", country: "USA", city: "New York" },
+        { name: "Olivia", country: "Australia", city: "Sydney" },
+        { name: "Noah", country: "Canada", city: "Toronto" },
+        { name: "Sophia", country: "Ireland", city: "Dublin" },
+        { name: "William", country: "New Zealand", city: "Auckland" },
+        { name: "Ava", country: "USA", city: "Los Angeles" },
+        { name: "James", country: "UK", city: "Manchester" },
+        { name: "Isabella", country: "Canada", city: "Vancouver" },
+        { name: "Lucas", country: "Australia", city: "Melbourne" },
+        { name: "Mia", country: "USA", city: "Chicago" },
+        { name: "Benjamin", country: "UK", city: "Edinburgh" },
+        { name: "Charlotte", country: "South Africa", city: "Cape Town" },
+        { name: "Elijah", country: "USA", city: "San Francisco" },
+        { name: "Amelia", country: "UK", city: "Bristol" },
+        { name: "Oliver", country: "Canada", city: "Montreal" },
+        { name: "Harper", country: "USA", city: "Seattle" },
+        { name: "Henry", country: "Australia", city: "Brisbane" },
+        { name: "Evelyn", country: "Ireland", city: "Cork" },
+        { name: "Alexander", country: "Germany", city: "Munich" },
+        { name: "Abigail", country: "France", city: "Paris" },
+        { name: "Michael", country: "USA", city: "Boston" },
+        { name: "Emily", country: "UK", city: "Liverpool" },
+        { name: "Ethan", country: "Singapore", city: "Singapore" },
+        { name: "Elizabeth", country: "USA", city: "Austin" },
+        { name: "Daniel", country: "USA", city: "Denver" },
+        { name: "Sofia", country: "Spain", city: "Madrid" },
+        { name: "Matthew", country: "Canada", city: "Ottawa" },
+        { name: "Avery", country: "USA", city: "Miami" },
+        { name: "Jackson", country: "UK", city: "Glasgow" },
+        { name: "Ella", country: "Netherlands", city: "Amsterdam" },
+        { name: "Sebastian", country: "Sweden", city: "Stockholm" },
+        { name: "Scarlett", country: "USA", city: "San Diego" },
+        { name: "Jack", country: "Australia", city: "Perth" },
+        { name: "Grace", country: "New Zealand", city: "Wellington" },
+        { name: "David", country: "USA", city: "Houston" },
+        { name: "Chloe", country: "France", city: "Lyon" },
+        { name: "Joseph", country: "Italy", city: "Rome" },
+        { name: "Victoria", country: "Canada", city: "Calgary" },
+        { name: "Samuel", country: "USA", city: "Philadelphia" },
+        { name: "Riley", country: "Ireland", city: "Galway" },
+        { name: "John", country: "UK", city: "Birmingham" },
+        { name: "Zoey", country: "Norway", city: "Oslo" },
+        { name: "Luke", country: "USA", city: "Nashville" },
+        { name: "Lily", country: "Denmark", city: "Copenhagen" },
+        { name: "Gabriel", country: "Brazil", city: "Rio de Janeiro" },
+        { name: "Lillian", country: "USA", city: "Portland" },
+        { name: "Carter", country: "Australia", city: "Adelaide" },
+        { name: "Hannah", country: "Finland", city: "Helsinki" }
+    ];
+
+    const topics = [
+        { name: "Home", file: "home.html" },
+        { name: "Family", file: "family.html" },
+        { name: "Hobby", file: "hobbies.html" },
+        { name: "Food", file: "food.html" },
+        { name: "Travel", file: "travel.html" },
+        { name: "Music", file: "music.html" },
+        { name: "Movies", file: "movies.html" },
+        { name: "Sports", file: "sports.html" },
+        { name: "Weather", file: "weather.html" },
+        { name: "Work", file: "jobs.html" },
+        { name: "School", file: "school.html" },
+        { name: "Daily Routine", file: "daily.html" },
+        { name: "Pets", file: "pets.html" },
+        { name: "Holidays", file: "holidays.html" },
+        { name: "Future Plans", file: "future.html" },
+        { name: "Childhood", file: "childhood.html" },
+        { name: "Shopping", file: "shopping.html" },
+        { name: "Technology", file: "techno.html" },
+        { name: "Health", file: "health.html" },
+        { name: "Money", file: "money.html" },
+        { name: "Seasons", file: "seasons.html" },
+        { name: "Transportation", file: "transport.html" },
+        { name: "Clothes & Fashion", file: "clothes.html" },
+        { name: "Friends", file: "friends.html" },
+        { name: "Love & Marriage", file: "love.html" },
+        { name: "Social Media", file: "socialnetworking.html" },
+        { name: "Environment", file: "environment.html" },
+        { name: "Culture", file: "culture.html" },
+        { name: "Books", file: "books.html" },
+        { name: "Art", file: "art.html" },
+        { name: "Computers", file: "computers.html" },
+        { name: "Dreams", file: "dreams.html" },
+        { name: "Eating Out", file: "restaurants.html" },
+        { name: "Education", file: "education.html" },
+        { name: "Fear", file: "fear.html" },
+        { name: "Goals", file: "goals.html" },
+        { name: "Habits", file: "habits.html" },
+        { name: "Happiness", file: "happiness.html" },
+        { name: "Internet", file: "internet.html" },
+        { name: "Languages", file: "language.html" },
+        { name: "Motivation", file: "motivation.html" },
+        { name: "Personality", file: "people.html" },
+        { name: "Sleep", file: "sleep.html" },
+        { name: "Stress", file: "stress.html" },
+        { name: "Time", file: "time.html" },
+        { name: "Weekends", file: "weekend.html" },
+        { name: "Charity", file: "charity.html" },
+        { name: "Crime", file: "crime.html" },
+        { name: "Advice", file: "advice.html" },
+        { name: "Animals", file: "animals.html" }
+    ];
+
+    // ==========================================
+    // LOGIC
+    // ==========================================
+    const personSelect = document.getElementById('personSelect');
+    const topicSelect = document.getElementById('topicSelect');
+    const nameDisplay = document.getElementById('nameDisplay');
+    const countryDisplay = document.getElementById('countryDisplay');
+    const cityDisplay = document.getElementById('cityDisplay');
+    const promptOutput = document.getElementById('promptOutput');
+    const jpPromptOutput = document.getElementById('jpPromptOutput');
+
+    // Init Dropdowns
+    function init() {
+        personas.forEach((p, index) => {
+            const opt = document.createElement('option');
+            opt.value = index;
+            opt.text = `${p.name} — ${p.city}, ${p.country.substring(0,2)}`;
+            personSelect.appendChild(opt);
+        });
+
+        topics.forEach((t, index) => {
+            const opt = document.createElement('option');
+            opt.value = index;
+            opt.text = t.name;
+            topicSelect.appendChild(opt);
+        });
+
+        // Listeners
+        personSelect.addEventListener('change', updateUI);
+        topicSelect.addEventListener('change', updateUI);
+
+        // First Random
+        randomizeAll();
+    }
+
+    function updateUI() {
+        const pIndex = personSelect.value;
+        const tIndex = topicSelect.value;
+        const p = personas[pIndex];
+        const t = topics[tIndex];
+
+        // Update fields
+        nameDisplay.value = p.name;
+        countryDisplay.value = p.country;
+        cityDisplay.value = p.city;
+
+        // Generate English Prompt (Gemini Optimized)
+        const topicUrl = `http://iteslj.org/questions/${t.file}`;
+        const engPrompt = `You are ${p.name} from ${p.city}, ${p.country}.
+We are talking online for the first time today. Please have a casual conversation with me in English.
+
+[STRICT RULE]
+I want to practice talking specifically about the topic: "${t.name}".
+1. Please use questions ONLY from this list: ${topicUrl}
+2. Pick one question from that list to start.
+3. After I answer, react briefly, then ask the NEXT question from the same list.
+4. Even if the conversation drifts (e.g. to food or hobbies), you MUST bring it back to "${t.name}" by asking the next question from the list.
+5. Do not create your own questions. Stick to the list.
+
+Please start by asking me the first question about "${t.name}".`;
+
+        promptOutput.value = engPrompt;
+
+        // Generate Japanese Prompt
+        const jpPrompt = `あなたは${p.country}の${p.city}出身の${p.name}です。私とオンラインで英会話をしています。今日が初対面です。英語で気軽に雑談してください。
+
+【ルール】
+今回のトークテーマは「${t.name}」です。
+必ずこのリストにある質問を使ってください: ${topicUrl}
+私が他の話をしても、必ずこのテーマに戻って質問を続けてください。`;
+
+        jpPromptOutput.value = jpPrompt;
+    }
+
+    // Randomizers
+    function randomizeAll() {
+        randomizePersona(false);
+        randomizeTopic(false);
+        updateUI();
+    }
+
+    function randomizePersona(update = true) {
+        const r = Math.floor(Math.random() * personas.length);
+        personSelect.value = r;
+        if(update) updateUI();
+    }
+
+    function randomizeTopic(update = true) {
+        const r = Math.floor(Math.random() * topics.length);
+        topicSelect.value = r;
+        if(update) updateUI();
+    }
+
+    // Copy Function
+    function copyToClipboard(elementId) {
+        const copyText = document.getElementById(elementId);
+        copyText.select();
+        copyText.setSelectionRange(0, 99999); // Mobile
+        navigator.clipboard.writeText(copyText.value).then(() => {
+            // Visual feedback (optional)
+            const btn = document.querySelector(`button[onclick="copyToClipboard('${elementId}')"]`);
+            const originalText = btn.innerText;
+            btn.innerText = "Copied! ✅";
+            setTimeout(() => btn.innerText = originalText, 1500);
+        });
+    }
+
+    // Start
+    init();
+
+</script>
+
+</body>
+</html>
