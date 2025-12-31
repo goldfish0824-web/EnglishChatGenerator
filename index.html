@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>English Chat Generator (Gemini Edition)</title>
+    <title>English Chat Generator (Natural Flow)</title>
     <style>
         :root {
             --primary-color: #4A90E2;
@@ -77,7 +77,7 @@
             padding: 10px;
             border: 1px solid #ddd;
             border-radius: 8px;
-            font-size: 16px; /* Prevents zoom on iPhone */
+            font-size: 16px;
             background-color: #fff;
             width: 100%;
             box-sizing: border-box;
@@ -135,7 +135,7 @@
 
         textarea {
             resize: vertical;
-            min-height: 120px;
+            min-height: 140px;
             font-family: monospace;
             font-size: 13px;
             line-height: 1.4;
@@ -163,7 +163,7 @@
 
 <div class="container">
     <h1>💬 English Chat Generator</h1>
-    <p class="description">50 personas + 50 topics (Gemini Optimized).<br>Generates strict prompts to keep the conversation on topic.</p>
+    <p class="description">50 personas + 50 topics.<br>Natural conversation flow (waits for your signal to move on).</p>
 
     <div class="row">
         <div class="col col-2">
@@ -198,14 +198,14 @@
     </div>
 
     <div class="output-section">
-        <div class="output-label">Prompt (English) - Optimized for Gemini</div>
+        <div class="output-label">Prompt (English) - Balanced Flow</div>
         <textarea id="promptOutput" readonly></textarea>
         <button class="copy-btn" onclick="copyToClipboard('promptOutput')">Copy English</button>
     </div>
 
     <div class="jp-section output-section">
         <div class="output-label">プロンプト (日本語)</div>
-        <textarea id="jpPromptOutput" readonly style="min-height: 80px;"></textarea>
+        <textarea id="jpPromptOutput" readonly style="min-height: 100px;"></textarea>
         <button class="copy-btn" onclick="copyToClipboard('jpPromptOutput')">日本語をコピー</button>
     </div>
 </div>
@@ -331,7 +331,6 @@
     const promptOutput = document.getElementById('promptOutput');
     const jpPromptOutput = document.getElementById('jpPromptOutput');
 
-    // Init Dropdowns
     function init() {
         personas.forEach((p, index) => {
             const opt = document.createElement('option');
@@ -347,11 +346,9 @@
             topicSelect.appendChild(opt);
         });
 
-        // Listeners
         personSelect.addEventListener('change', updateUI);
         topicSelect.addEventListener('change', updateUI);
 
-        // First Random
         randomizeAll();
     }
 
@@ -361,40 +358,45 @@
         const p = personas[pIndex];
         const t = topics[tIndex];
 
-        // Update fields
         nameDisplay.value = p.name;
         countryDisplay.value = p.country;
         cityDisplay.value = p.city;
 
-        // Generate English Prompt (Gemini Optimized)
         const topicUrl = `http://iteslj.org/questions/${t.file}`;
+        
+        // --- UPDATED LOGIC FOR BALANCED CONVERSATION ---
         const engPrompt = `You are ${p.name} from ${p.city}, ${p.country}.
 We are talking online for the first time today. Please have a casual conversation with me in English.
 
-[STRICT RULE]
-I want to practice talking specifically about the topic: "${t.name}".
-1. Please use questions ONLY from this list: ${topicUrl}
-2. Pick one question from that list to start.
-3. After I answer, react briefly, then ask the NEXT question from the same list.
-4. Even if the conversation drifts (e.g. to food or hobbies), you MUST bring it back to "${t.name}" by asking the next question from the list.
-5. Do not create your own questions. Stick to the list.
+[CONVERSATION RULES]
+1. Topic: "${t.name}" (Questions source: ${topicUrl}).
+2. Start by asking me the FIRST question from the list.
+3. IMPORTANT: Do NOT rush to the next question.
+   - When I answer, react naturally and ask follow-up questions to dig deeper into my answer.
+   - If I ask you a question, answer it fully and share your own opinion.
+   - Treat this like a real chat, not an interview.
+
+[WHEN TO MOVE TO THE NEXT QUESTION]
+Only choose the NEXT question from the list (${topicUrl}) in these two cases:
+1. When I explicitly say phrases like "Can you ask me another question?", "Next question please", or "Next".
+2. When the current conversation topic has naturally died down.
 
 Please start by asking me the first question about "${t.name}".`;
-
+        
         promptOutput.value = engPrompt;
 
-        // Generate Japanese Prompt
         const jpPrompt = `あなたは${p.country}の${p.city}出身の${p.name}です。私とオンラインで英会話をしています。今日が初対面です。英語で気軽に雑談してください。
 
 【ルール】
 今回のトークテーマは「${t.name}」です。
-必ずこのリストにある質問を使ってください: ${topicUrl}
-私が他の話をしても、必ずこのテーマに戻って質問を続けてください。`;
+1. ${topicUrl} のリストにある質問から始めてください。
+2. 私の回答には自然に反応し、深掘りする質問をしてください（すぐに次の質問に行かないでください）。
+3. 私があなたに質問したら、それに詳しく答えてください。
+4. 私が「別の質問をして」と言った時か、会話が途切れた時だけ、リストから次の質問を選んでください。`;
 
         jpPromptOutput.value = jpPrompt;
     }
 
-    // Randomizers
     function randomizeAll() {
         randomizePersona(false);
         randomizeTopic(false);
@@ -413,13 +415,11 @@ Please start by asking me the first question about "${t.name}".`;
         if(update) updateUI();
     }
 
-    // Copy Function
     function copyToClipboard(elementId) {
         const copyText = document.getElementById(elementId);
         copyText.select();
-        copyText.setSelectionRange(0, 99999); // Mobile
+        copyText.setSelectionRange(0, 99999);
         navigator.clipboard.writeText(copyText.value).then(() => {
-            // Visual feedback (optional)
             const btn = document.querySelector(`button[onclick="copyToClipboard('${elementId}')"]`);
             const originalText = btn.innerText;
             btn.innerText = "Copied! ✅";
@@ -427,7 +427,6 @@ Please start by asking me the first question about "${t.name}".`;
         });
     }
 
-    // Start
     init();
 
 </script>
